@@ -15,9 +15,6 @@ concurrency:
   group: "pages"
   cancel-in-progress: false
 
-# ─────────────────────────────────────────────────────────────
-# Job 1 — fmt · clippy · all tests (unit + integration + doc)
-# ─────────────────────────────────────────────────────────────
 jobs:
   check:
     name: Check (fmt · clippy · test)
@@ -53,10 +50,6 @@ jobs:
       - name: Unit + integration + doc tests
         run: cargo test --all
 
-  # ─────────────────────────────────────────────────────────────
-  # Job 2 — benchmarks + rustdoc → GitHub Pages
-  # Only runs on pushes to main (not PRs)
-  # ─────────────────────────────────────────────────────────────
   docs-and-bench:
     name: Docs + Benchmarks
     runs-on: ubuntu-latest
@@ -99,43 +92,13 @@ jobs:
           cp word_pca.png     site/artifacts/
           cp embeddings.txt   site/artifacts/
           cp training_history.json site/artifacts/
-          # landing page
-          cat > site/index.html << 'HTML'
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-            <meta charset="UTF-8">
-            <title>word2vec — Rust</title>
-            <style>
-              body { font-family: sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; }
-              img  { max-width: 100%; border: 1px solid #ddd; border-radius: 6px; margin: 10px 0; }
-              a    { color: #0366d6; }
-            </style>
-          </head>
-          <body>
-            <h1>word2vec — Production Rust Implementation</h1>
-            <p>Skip-gram &amp; CBOW with Negative Sampling.</p>
-            <ul>
-              <li><a href="word2vec/index.html">📖 API Docs (rustdoc)</a></li>
-              <li><a href="artifacts/embeddings.txt">⬇ embeddings.txt (word2vec text format)</a></li>
-              <li><a href="artifacts/training_history.json">⬇ training_history.json</a></li>
-            </ul>
-            <h2>Training Loss</h2>
-            <img src="artifacts/loss_curve.png" alt="Loss curve">
-            <h2>Word Vectors (PCA)</h2>
-            <img src="artifacts/word_pca.png" alt="PCA projection">
-          </body>
-          </html>
-          HTML
+          cp index.html site/index.html
 
       - name: Upload pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: site
 
-  # ─────────────────────────────────────────────────────────────
-  # Job 3 — deploy to GitHub Pages
-  # ─────────────────────────────────────────────────────────────
   deploy:
     name: Deploy to GitHub Pages
     if: github.ref == 'refs/heads/main'
