@@ -1,1 +1,5 @@
 /target
+embeddings.json
+embeddings.txt
+training_history.json
+*.png
