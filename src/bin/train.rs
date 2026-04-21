@@ -14,8 +14,8 @@
 
 use std::env;
 use std::process;
-use word2vec::{Config, ModelType, Trainer};
 use word2vec::plot::{plot_loss_curve, plot_word_vectors_pca};
+use word2vec::{Config, ModelType, Trainer};
 
 fn main() {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
@@ -23,7 +23,9 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let config = parse_args(&args);
 
-    let corpus = if let Some(path) = args.iter().position(|a| a == "--input")
+    let corpus = if let Some(path) = args
+        .iter()
+        .position(|a| a == "--input")
         .and_then(|i| args.get(i + 1))
     {
         match std::fs::read_to_string(path) {
@@ -61,17 +63,20 @@ fn main() {
     for stat in &trainer.history {
         println!(
             "Epoch {:>3} | loss: {:.4} | lr: {:.5} | pairs: {:>8} | {:.2}s",
-            stat.epoch, stat.avg_loss, stat.learning_rate,
-            stat.pairs_processed, stat.elapsed_secs
+            stat.epoch, stat.avg_loss, stat.learning_rate, stat.pairs_processed, stat.elapsed_secs
         );
     }
 
-    let out_path = args.iter().position(|a| a == "--output")
+    let out_path = args
+        .iter()
+        .position(|a| a == "--output")
         .and_then(|i| args.get(i + 1))
         .map(|s| s.as_str())
         .unwrap_or("embeddings.json");
 
-    embeddings.save(out_path).expect("Failed to save embeddings");
+    embeddings
+        .save(out_path)
+        .expect("Failed to save embeddings");
     println!("\nEmbeddings saved to: {out_path}");
 
     let txt_path = out_path.replace(".json", ".txt");
@@ -88,7 +93,10 @@ fn main() {
     println!("\n=== Nearest Neighbours (sample) ===");
     for query in embeddings.words().into_iter().take(5) {
         let similar = embeddings.most_similar(query, 5);
-        let pairs: Vec<String> = similar.iter().map(|(w, s)| format!("{w}({s:.2})")).collect();
+        let pairs: Vec<String> = similar
+            .iter()
+            .map(|(w, s)| format!("{w}({s:.2})"))
+            .collect();
         println!("  {query:<15} → {}", pairs.join(", "));
     }
 }
@@ -117,7 +125,8 @@ fn parse_args(args: &[String]) -> Config {
     let mut config = Config::default();
 
     let get_arg = |flag: &str| -> Option<&str> {
-        args.iter().position(|a| a == flag)
+        args.iter()
+            .position(|a| a == flag)
             .and_then(|i| args.get(i + 1))
             .map(|s| s.as_str())
     };

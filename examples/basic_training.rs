@@ -2,13 +2,11 @@
 //!
 //! Run with: `cargo run --example basic_training`
 
-use word2vec::{Config, ModelType, Trainer};
 use word2vec::plot::{plot_loss_curve, plot_word_vectors_pca};
+use word2vec::{Config, ModelType, Trainer};
 
 fn main() {
-    env_logger::Builder::from_env(
-        env_logger::Env::default().default_filter_or("info")
-    ).init();
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
     let corpus: Vec<String> = vec![
         "paris is the capital of france and a major european city",
@@ -31,8 +29,14 @@ fn main() {
         "data science combines statistics programming and domain knowledge",
         "the sun rises every morning in the east bringing warm light",
         "rivers flow from mountains to the sea through valleys",
-    ].into_iter().map(str::to_string).collect::<Vec<_>>()
-     .into_iter().cycle().take(200).collect();
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect::<Vec<_>>()
+    .into_iter()
+    .cycle()
+    .take(200)
+    .collect();
 
     let config = Config {
         embedding_dim: 50,
@@ -56,14 +60,20 @@ fn main() {
     println!("\n--- Nearest Neighbours ---");
     for word in ["paris", "king", "machine", "dog"] {
         let similar = embeddings.most_similar(word, 5);
-        let formatted: Vec<String> = similar.iter()
+        let formatted: Vec<String> = similar
+            .iter()
             .map(|(w, s)| format!("{w}({s:.2})"))
             .collect();
         println!("  {word:<12} → {}", formatted.join(", "));
     }
 
     println!("\n--- Similarities ---");
-    let pairs = [("paris", "berlin"), ("king", "queen"), ("dog", "cat"), ("paris", "dog")];
+    let pairs = [
+        ("paris", "berlin"),
+        ("king", "queen"),
+        ("dog", "cat"),
+        ("paris", "dog"),
+    ];
     for (a, b) in pairs {
         if let Ok(sim) = embeddings.similarity(a, b) {
             println!("  sim({a}, {b}) = {sim:.4}");
@@ -78,8 +88,12 @@ fn main() {
     }
 
     embeddings.save("embeddings.json").expect("save failed");
-    embeddings.save_text_format("embeddings.txt").expect("text save failed");
-    trainer.save_history("training_history.json").expect("history save failed");
+    embeddings
+        .save_text_format("embeddings.txt")
+        .expect("text save failed");
+    trainer
+        .save_history("training_history.json")
+        .expect("history save failed");
 
     plot_loss_curve(&trainer.history, "loss_curve.png").expect("plot failed");
     plot_word_vectors_pca(&embeddings, 40, "word_pca.png").expect("pca plot failed");

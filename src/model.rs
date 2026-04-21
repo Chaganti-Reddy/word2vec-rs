@@ -62,7 +62,12 @@ impl Model {
         let input_weights: Vec<f32> = (0..n).map(|_| rng.gen_range(-r..r)).collect();
         let output_weights = vec![0.0_f32; n]; // output weights start at zero
 
-        Self { vocab_size, embedding_dim, input_weights, output_weights }
+        Self {
+            vocab_size,
+            embedding_dim,
+            input_weights,
+            output_weights,
+        }
     }
 
     /// Get the embedding vector for word at `idx` (slice into input_weights).
@@ -174,7 +179,11 @@ impl Model {
         let mut loss = 0.0f32;
 
         {
-            let score: f32 = ctx_avg.iter().zip(self.output_vec(center)).map(|(a, b)| a * b).sum();
+            let score: f32 = ctx_avg
+                .iter()
+                .zip(self.output_vec(center))
+                .map(|(a, b)| a * b)
+                .sum();
             let sig = sigmoid(score);
             let err = sig - 1.0;
             loss -= sig.ln().max(-30.0);
@@ -186,8 +195,14 @@ impl Model {
         }
 
         for &neg in negatives {
-            if neg == center { continue; }
-            let score: f32 = ctx_avg.iter().zip(self.output_vec(neg)).map(|(a, b)| a * b).sum();
+            if neg == center {
+                continue;
+            }
+            let score: f32 = ctx_avg
+                .iter()
+                .zip(self.output_vec(neg))
+                .map(|(a, b)| a * b)
+                .sum();
             let sig = sigmoid(score);
             loss -= (1.0 - sig).ln().max(-30.0);
             let out_neg: Vec<f32> = self.output_vec(neg).to_vec();
@@ -300,7 +315,10 @@ mod tests {
         for _ in 0..200 {
             last = m.skipgram_update(0, 1, &[2, 3], 0.01);
         }
-        assert!(last < first, "loss should decrease with repetition: {first} -> {last}");
+        assert!(
+            last < first,
+            "loss should decrease with repetition: {first} -> {last}"
+        );
     }
 
     #[test]

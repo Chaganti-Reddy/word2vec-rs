@@ -16,8 +16,8 @@
 //! // let queen = emb.analogy("king", "man", "woman", 3);
 //! ```
 
-use std::path::Path;
 use serde::{Deserialize, Serialize};
+use std::path::Path;
 
 use crate::config::Config;
 use crate::error::{Result, Word2VecError};
@@ -35,7 +35,11 @@ pub struct Embeddings {
 impl Embeddings {
     /// Wrap a trained model and vocabulary.
     pub(crate) fn new(model: Model, vocab: Vocabulary, config: Config) -> Self {
-        Self { model, vocab, config }
+        Self {
+            model,
+            vocab,
+            config,
+        }
     }
 
     /// Number of words in the vocabulary.
@@ -69,7 +73,10 @@ impl Embeddings {
     /// assert!(emb.get_vector("nonexistent").is_none());
     /// ```
     pub fn get_vector(&self, word: &str) -> Option<&[f32]> {
-        self.vocab.word2idx.get(word).map(|&i| self.model.input_vec(i))
+        self.vocab
+            .word2idx
+            .get(word)
+            .map(|&i| self.model.input_vec(i))
     }
 
     /// Cosine similarity between two words.
@@ -86,9 +93,11 @@ impl Embeddings {
     /// assert!(sim >= -1.0 && sim <= 1.0);
     /// ```
     pub fn similarity(&self, word_a: &str, word_b: &str) -> Result<f32> {
-        let va = self.get_vector(word_a)
+        let va = self
+            .get_vector(word_a)
             .ok_or_else(|| Word2VecError::UnknownWord(word_a.to_string()))?;
-        let vb = self.get_vector(word_b)
+        let vb = self
+            .get_vector(word_b)
             .ok_or_else(|| Word2VecError::UnknownWord(word_b.to_string()))?;
         Ok(cosine_similarity(va, vb))
     }
@@ -120,7 +129,8 @@ impl Embeddings {
         scores.sort_unstable_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
         scores.truncate(top_k);
 
-        scores.into_iter()
+        scores
+            .into_iter()
             .map(|(i, sim)| (self.vocab.idx2word[i].clone(), sim))
             .collect()
     }
@@ -140,11 +150,14 @@ impl Embeddings {
         pos_b: &str,
         top_k: usize,
     ) -> Result<Vec<(String, f32)>> {
-        let va = self.get_vector(pos_a)
+        let va = self
+            .get_vector(pos_a)
             .ok_or_else(|| Word2VecError::UnknownWord(pos_a.to_string()))?;
-        let vna = self.get_vector(neg_a)
+        let vna = self
+            .get_vector(neg_a)
             .ok_or_else(|| Word2VecError::UnknownWord(neg_a.to_string()))?;
-        let vb = self.get_vector(pos_b)
+        let vb = self
+            .get_vector(pos_b)
             .ok_or_else(|| Word2VecError::UnknownWord(pos_b.to_string()))?;
 
         let dim = self.embedding_dim();
@@ -160,7 +173,8 @@ impl Embeddings {
         scores.sort_unstable_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
         scores.truncate(top_k);
 
-        Ok(scores.into_iter()
+        Ok(scores
+            .into_iter()
             .map(|(i, s)| (self.vocab.idx2word[i].clone(), s))
             .collect())
     }
@@ -273,7 +287,7 @@ mod tests {
     fn make_embeddings() -> Embeddings {
         use crate::{Config, Trainer};
         let corpus: Vec<String> = (0..30)
-            .map(|i| format!("word{} word{} word{}", i % 5, (i+1) % 5, (i+2) % 5))
+            .map(|i| format!("word{} word{} word{}", i % 5, (i + 1) % 5, (i + 2) % 5))
             .collect();
         let mut trainer = Trainer::new(Config {
             epochs: 2,

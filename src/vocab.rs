@@ -15,12 +15,12 @@
 //! A flat array of `TABLE_SIZE` word indices drawn from `freq^0.75`,
 //! which downweights very frequent words as negatives.
 
-use std::collections::HashMap;
+use rand::rngs::SmallRng;
 use rand::Rng;
 #[allow(unused_imports)]
 use rand::SeedableRng;
-use rand::rngs::SmallRng;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 use crate::config::Config;
 use crate::error::{Result, Word2VecError};
@@ -101,7 +101,13 @@ impl Vocabulary {
 
         let noise_table = Self::build_noise_table(&counts);
 
-        Ok(Self { word2idx, idx2word, counts, noise_table, total_tokens })
+        Ok(Self {
+            word2idx,
+            idx2word,
+            counts,
+            noise_table,
+            total_tokens,
+        })
     }
 
     /// Number of unique tokens in vocabulary.
@@ -129,7 +135,10 @@ impl Vocabulary {
     /// assert_eq!(vocab.count("z"), 0);
     /// ```
     pub fn count(&self, word: &str) -> u64 {
-        self.word2idx.get(word).map(|&i| self.counts[i]).unwrap_or(0)
+        self.word2idx
+            .get(word)
+            .map(|&i| self.counts[i])
+            .unwrap_or(0)
     }
 
     /// Returns `true` if this word should be subsampled (discarded) given
@@ -219,8 +228,14 @@ mod tests {
 
     #[test]
     fn min_count_filters() {
-        let tokens = vec!["a a a b b c c".split_whitespace().map(str::to_string).collect()];
-        let cfg = Config { min_count: 2, ..Config::default() };
+        let tokens = vec!["a a a b b c c"
+            .split_whitespace()
+            .map(str::to_string)
+            .collect()];
+        let cfg = Config {
+            min_count: 2,
+            ..Config::default()
+        };
         let _vocab = Vocabulary::build(&tokens, &cfg).unwrap();
         let tokens2 = vec!["a a a b".split_whitespace().map(str::to_string).collect()];
         let result = Vocabulary::build(&tokens2, &cfg);

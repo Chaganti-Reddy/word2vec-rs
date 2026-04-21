@@ -31,7 +31,8 @@ pub fn plot_loss_curve(history: &[EpochStats], output_path: &str) -> Result<()> 
     }
 
     let root = BitMapBackend::new(output_path, (900, 500)).into_drawing_area();
-    root.fill(&WHITE).map_err(|e| Word2VecError::Plot(e.to_string()))?;
+    root.fill(&WHITE)
+        .map_err(|e| Word2VecError::Plot(e.to_string()))?;
 
     let losses: Vec<f64> = history.iter().map(|s| s.avg_loss).collect();
     let max_loss = losses.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
@@ -70,9 +71,10 @@ pub fn plot_loss_curve(history: &[EpochStats], output_path: &str) -> Result<()> 
     // Dots at each epoch
     chart
         .draw_series(
-            history.iter().enumerate().map(|(i, s)| {
-                Circle::new((i + 1, s.avg_loss), 4, BLUE.filled())
-            })
+            history
+                .iter()
+                .enumerate()
+                .map(|(i, s)| Circle::new((i + 1, s.avg_loss), 4, BLUE.filled())),
         )
         .map_err(|e| Word2VecError::Plot(e.to_string()))?;
 
@@ -82,7 +84,8 @@ pub fn plot_loss_curve(history: &[EpochStats], output_path: &str) -> Result<()> 
         .draw()
         .map_err(|e| Word2VecError::Plot(e.to_string()))?;
 
-    root.present().map_err(|e| Word2VecError::Plot(e.to_string()))?;
+    root.present()
+        .map_err(|e| Word2VecError::Plot(e.to_string()))?;
     Ok(())
 }
 
@@ -92,14 +95,20 @@ pub fn plot_loss_curve(history: &[EpochStats], output_path: &str) -> Result<()> 
 pub fn plot_word_vectors_pca(emb: &Embeddings, n_words: usize, output_path: &str) -> Result<()> {
     let n = n_words.min(emb.vocab_size());
     if n < 2 {
-        return Err(Word2VecError::Plot("need at least 2 words to plot".to_string()));
+        return Err(Word2VecError::Plot(
+            "need at least 2 words to plot".to_string(),
+        ));
     }
 
     // Collect vectors (top-n by vocab order = most frequent due to sorted vocab)
-    let words: Vec<&str> = emb.vocab().idx2word.iter().take(n).map(|s| s.as_str()).collect();
-    let vectors: Vec<&[f32]> = words.iter()
-        .filter_map(|w| emb.get_vector(w))
+    let words: Vec<&str> = emb
+        .vocab()
+        .idx2word
+        .iter()
+        .take(n)
+        .map(|s| s.as_str())
         .collect();
+    let vectors: Vec<&[f32]> = words.iter().filter_map(|w| emb.get_vector(w)).collect();
 
     let dim = vectors[0].len();
     let count = vectors.len();
@@ -109,7 +118,8 @@ pub fn plot_word_vectors_pca(emb: &Embeddings, n_words: usize, output_path: &str
         .map(|d| vectors.iter().map(|v| v[d] as f64).sum::<f64>() / count as f64)
         .collect();
 
-    let centered: Vec<Vec<f64>> = vectors.iter()
+    let centered: Vec<Vec<f64>> = vectors
+        .iter()
         .map(|v| (0..dim).map(|d| v[d] as f64 - mean[d]).collect())
         .collect();
 
@@ -118,22 +128,33 @@ pub fn plot_word_vectors_pca(emb: &Embeddings, n_words: usize, output_path: &str
     let pc2 = power_iteration_deflated(&centered, dim, 30, &pc1);
 
     // Project
-    let projected: Vec<(f64, f64)> = centered.iter()
+    let projected: Vec<(f64, f64)> = centered
+        .iter()
         .map(|v| (dot_f64(v, &pc1), dot_f64(v, &pc2)))
         .collect();
 
     let x_min = projected.iter().map(|p| p.0).fold(f64::INFINITY, f64::min);
-    let x_max = projected.iter().map(|p| p.0).fold(f64::NEG_INFINITY, f64::max);
+    let x_max = projected
+        .iter()
+        .map(|p| p.0)
+        .fold(f64::NEG_INFINITY, f64::max);
     let y_min = projected.iter().map(|p| p.1).fold(f64::INFINITY, f64::min);
-    let y_max = projected.iter().map(|p| p.1).fold(f64::NEG_INFINITY, f64::max);
+    let y_max = projected
+        .iter()
+        .map(|p| p.1)
+        .fold(f64::NEG_INFINITY, f64::max);
     let xpad = (x_max - x_min).max(0.1) * 0.15;
     let ypad = (y_max - y_min).max(0.1) * 0.15;
 
     let root = BitMapBackend::new(output_path, (1100, 700)).into_drawing_area();
-    root.fill(&WHITE).map_err(|e| Word2VecError::Plot(e.to_string()))?;
+    root.fill(&WHITE)
+        .map_err(|e| Word2VecError::Plot(e.to_string()))?;
 
     let mut chart = ChartBuilder::on(&root)
-        .caption("Word Vectors — PCA Projection", ("sans-serif", 24).into_font())
+        .caption(
+            "Word Vectors — PCA Projection",
+            ("sans-serif", 24).into_font(),
+        )
         .margin(40)
         .x_label_area_size(40)
         .y_label_area_size(50)
@@ -143,7 +164,8 @@ pub fn plot_word_vectors_pca(emb: &Embeddings, n_words: usize, output_path: &str
         )
         .map_err(|e| Word2VecError::Plot(e.to_string()))?;
 
-    chart.configure_mesh()
+    chart
+        .configure_mesh()
         .x_desc("PC1")
         .y_desc("PC2")
         .draw()
@@ -152,18 +174,21 @@ pub fn plot_word_vectors_pca(emb: &Embeddings, n_words: usize, output_path: &str
     for (i, (&word, &(x, y))) in words.iter().zip(projected.iter()).enumerate() {
         let color = Palette99::pick(i % 99);
 
-        chart.draw_series(std::iter::once(Circle::new((x, y), 5, color.filled())))
+        chart
+            .draw_series(std::iter::once(Circle::new((x, y), 5, color.filled())))
             .map_err(|e| Word2VecError::Plot(e.to_string()))?;
 
-        chart.draw_series(std::iter::once(Text::new(
-            word.to_string(),
-            (x + xpad * 0.05, y),
-            ("sans-serif", 12).into_font(),
-        )))
-        .map_err(|e| Word2VecError::Plot(e.to_string()))?;
+        chart
+            .draw_series(std::iter::once(Text::new(
+                word.to_string(),
+                (x + xpad * 0.05, y),
+                ("sans-serif", 12).into_font(),
+            )))
+            .map_err(|e| Word2VecError::Plot(e.to_string()))?;
     }
 
-    root.present().map_err(|e| Word2VecError::Plot(e.to_string()))?;
+    root.present()
+        .map_err(|e| Word2VecError::Plot(e.to_string()))?;
     Ok(())
 }
 
@@ -178,7 +203,9 @@ fn norm_f64(v: &[f64]) -> f64 {
 fn normalize_f64(v: &mut [f64]) {
     let n = norm_f64(v);
     if n > 1e-10 {
-        for x in v.iter_mut() { *x /= n; }
+        for x in v.iter_mut() {
+            *x /= n;
+        }
     }
 }
 
@@ -203,10 +230,13 @@ fn power_iteration(data: &[Vec<f64>], dim: usize, iters: usize, seed: usize) -> 
 
 /// Find second PC by deflating the first.
 fn power_iteration_deflated(data: &[Vec<f64>], dim: usize, iters: usize, pc1: &[f64]) -> Vec<f64> {
-    let deflated: Vec<Vec<f64>> = data.iter().map(|row| {
-        let proj = dot_f64(row, pc1);
-        (0..dim).map(|d| row[d] - proj * pc1[d]).collect()
-    }).collect();
+    let deflated: Vec<Vec<f64>> = data
+        .iter()
+        .map(|row| {
+            let proj = dot_f64(row, pc1);
+            (0..dim).map(|d| row[d] - proj * pc1[d]).collect()
+        })
+        .collect();
 
     power_iteration(&deflated, dim, iters, 1)
 }
@@ -224,9 +254,27 @@ mod tests {
     #[test]
     fn plot_loss_curve_creates_file() {
         let history = vec![
-            EpochStats { epoch: 1, avg_loss: 2.5, learning_rate: 0.025, pairs_processed: 100, elapsed_secs: 0.5 },
-            EpochStats { epoch: 2, avg_loss: 1.8, learning_rate: 0.020, pairs_processed: 100, elapsed_secs: 0.5 },
-            EpochStats { epoch: 3, avg_loss: 1.2, learning_rate: 0.015, pairs_processed: 100, elapsed_secs: 0.5 },
+            EpochStats {
+                epoch: 1,
+                avg_loss: 2.5,
+                learning_rate: 0.025,
+                pairs_processed: 100,
+                elapsed_secs: 0.5,
+            },
+            EpochStats {
+                epoch: 2,
+                avg_loss: 1.8,
+                learning_rate: 0.020,
+                pairs_processed: 100,
+                elapsed_secs: 0.5,
+            },
+            EpochStats {
+                epoch: 3,
+                avg_loss: 1.2,
+                learning_rate: 0.015,
+                pairs_processed: 100,
+                elapsed_secs: 0.5,
+            },
         ];
         let path = "/tmp/word2vec_test_loss.png";
         plot_loss_curve(&history, path).unwrap();
@@ -237,9 +285,21 @@ mod tests {
     fn pca_plot_creates_file() {
         use crate::{Config, Trainer};
         let corpus: Vec<String> = (0..50)
-            .map(|i| format!("w{} w{} w{} w{}", i % 8, (i+1) % 8, (i+2) % 8, (i+3) % 8))
+            .map(|i| {
+                format!(
+                    "w{} w{} w{} w{}",
+                    i % 8,
+                    (i + 1) % 8,
+                    (i + 2) % 8,
+                    (i + 3) % 8
+                )
+            })
             .collect();
-        let mut trainer = Trainer::new(Config { epochs: 2, embedding_dim: 20, ..Config::default() });
+        let mut trainer = Trainer::new(Config {
+            epochs: 2,
+            embedding_dim: 20,
+            ..Config::default()
+        });
         let emb = trainer.train(&corpus).unwrap();
         let path = "/tmp/word2vec_test_pca.png";
         plot_word_vectors_pca(&emb, 8, path).unwrap();

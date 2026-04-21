@@ -11,7 +11,9 @@ use word2vec::Embeddings;
 fn main() {
     let args: Vec<String> = env::args().collect();
 
-    let model_path = args.iter().position(|a| a == "--model")
+    let model_path = args
+        .iter()
+        .position(|a| a == "--model")
         .and_then(|i| args.get(i + 1))
         .map(|s| s.as_str())
         .unwrap_or("embeddings.json");
@@ -50,12 +52,10 @@ fn main() {
         match parts.as_slice() {
             ["quit"] | ["exit"] | ["q"] => break,
 
-            ["sim", a, b] => {
-                match emb.similarity(a, b) {
-                    Ok(s) => println!("similarity({a}, {b}) = {s:.4}"),
-                    Err(e) => println!("Error: {e}"),
-                }
-            }
+            ["sim", a, b] => match emb.similarity(a, b) {
+                Ok(s) => println!("similarity({a}, {b}) = {s:.4}"),
+                Err(e) => println!("Error: {e}"),
+            },
 
             ["near", word, k] => {
                 let k: usize = k.parse().unwrap_or(10);
@@ -69,17 +69,15 @@ fn main() {
                 }
             }
 
-            ["analogy", pos_a, neg_a, pos_b] => {
-                match emb.analogy(pos_a, neg_a, pos_b, 5) {
-                    Ok(results) => {
-                        println!("{pos_a} - {neg_a} + {pos_b} ≈");
-                        for (w, s) in &results {
-                            println!("  {w:<20} {s:.4}");
-                        }
+            ["analogy", pos_a, neg_a, pos_b] => match emb.analogy(pos_a, neg_a, pos_b, 5) {
+                Ok(results) => {
+                    println!("{pos_a} - {neg_a} + {pos_b} ≈");
+                    for (w, s) in &results {
+                        println!("  {w:<20} {s:.4}");
                     }
-                    Err(e) => println!("Error: {e}"),
                 }
-            }
+                Err(e) => println!("Error: {e}"),
+            },
 
             _ if line.trim().is_empty() => {}
             _ => println!("Unknown command. Try: sim, near, analogy, quit"),

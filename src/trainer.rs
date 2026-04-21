@@ -22,17 +22,17 @@
 //!         Embeddings ──► .most_similar() / .analogy() / .save()
 //! ```
 
-use std::path::Path;
-use rand::SeedableRng;
+use indicatif::{ProgressBar, ProgressStyle};
+use log::info;
 use rand::rngs::SmallRng;
 use rand::seq::SliceRandom;
-use log::info;
-use indicatif::{ProgressBar, ProgressStyle};
+use rand::SeedableRng;
+use std::path::Path;
 
 use crate::config::Config;
 use crate::embeddings::Embeddings;
 use crate::error::{Result, Word2VecError};
-use crate::model::{Model, sentence_to_pairs};
+use crate::model::{sentence_to_pairs, Model};
 use crate::vocab::Vocabulary;
 
 /// Recorded statistics for one epoch.
@@ -61,7 +61,10 @@ impl Trainer {
     /// assert!(trainer.history.is_empty());
     /// ```
     pub fn new(config: Config) -> Self {
-        Self { config, history: Vec::new() }
+        Self {
+            config,
+            history: Vec::new(),
+        }
     }
 
     /// Tokenise raw text into sentences (split on whitespace).
@@ -104,7 +107,9 @@ impl Trainer {
     /// println!("Vocab size: {}", embeddings.vocab_size());
     /// ```
     pub fn train(&mut self, corpus: &[String]) -> Result<Embeddings> {
-        self.config.validate().map_err(|_e| Word2VecError::EmptyVocabulary)?;
+        self.config
+            .validate()
+            .map_err(|_e| Word2VecError::EmptyVocabulary)?;
 
         let sentences = Self::tokenise(corpus);
         let vocab = Vocabulary::build(&sentences, &self.config)?;
@@ -163,13 +168,8 @@ impl Trainer {
                         .map(|_| vocab.negative_sample(&mut rng))
                         .collect();
 
-                    let loss = model.update(
-                        self.config.model,
-                        center,
-                        &context_words,
-                        &negatives,
-                        lr,
-                    );
+                    let loss =
+                        model.update(self.config.model, center, &context_words, &negatives, lr);
 
                     epoch_loss += loss as f64;
                     epoch_pairs += 1;
@@ -181,8 +181,13 @@ impl Trainer {
 
             pb.finish_and_clear();
 
-            let lr_now = (lr_start - (lr_start - lr_min) * (epoch + 1) as f32 / epochs as f32).max(lr_min);
-            let avg_loss = if epoch_pairs > 0 { epoch_loss / epoch_pairs as f64 } else { 0.0 };
+            let lr_now =
+                (lr_start - (lr_start - lr_min) * (epoch + 1) as f32 / epochs as f32).max(lr_min);
+            let avg_loss = if epoch_pairs > 0 {
+                epoch_loss / epoch_pairs as f64
+            } else {
+                0.0
+            };
             let elapsed = t_start.elapsed().as_secs_f64();
 
             let stats = EpochStats {
@@ -195,8 +200,12 @@ impl Trainer {
 
             info!(
                 "Epoch {}/{} | loss: {:.4} | lr: {:.5} | pairs: {} | {:.1}s",
-                stats.epoch, epochs, stats.avg_loss, stats.learning_rate,
-                stats.pairs_processed, stats.elapsed_secs
+                stats.epoch,
+                epochs,
+                stats.avg_loss,
+                stats.learning_rate,
+                stats.pairs_processed,
+                stats.elapsed_secs
             );
 
             self.history.push(stats);
@@ -214,15 +223,19 @@ impl Trainer {
     /// // trainer.save_history("history.json").unwrap();
     /// ```
     pub fn save_history(&self, path: impl AsRef<Path>) -> Result<()> {
-        let records: Vec<serde_json::Value> = self.history.iter().map(|s| {
-            serde_json::json!({
-                "epoch": s.epoch,
-                "avg_loss": s.avg_loss,
-                "learning_rate": s.learning_rate,
-                "pairs_processed": s.pairs_processed,
-                "elapsed_secs": s.elapsed_secs,
+        let records: Vec<serde_json::Value> = self
+            .history
+            .iter()
+            .map(|s| {
+                serde_json::json!({
+                    "epoch": s.epoch,
+                    "avg_loss": s.avg_loss,
+                    "learning_rate": s.learning_rate,
+                    "pairs_processed": s.pairs_processed,
+                    "elapsed_secs": s.elapsed_secs,
+                })
             })
-        }).collect();
+            .collect();
 
         let json = serde_json::to_string_pretty(&records)?;
         std::fs::write(path, json)?;
@@ -231,11 +244,10 @@ impl Trainer {
 
     /// Rough pair count for LR scheduling (doesn't account for subsampling).
     fn estimate_pairs(&self, sentences: &[Vec<String>], vocab: &Vocabulary) -> u64 {
-        sentences.iter()
+        sentences
+            .iter()
             .map(|s| {
-                let len = s.iter()
-                    .filter(|w| vocab.word2idx.contains_key(*w))
-                    .count() as u64;
+                let len = s.iter().filter(|w| vocab.word2idx.contains_key(*w)).count() as u64;
                 len.saturating_sub(1) * self.config.window_size as u64 * 2
             })
             .sum()
@@ -245,7 +257,7 @@ impl Trainer {
         let pb = ProgressBar::new(total as u64);
         pb.set_style(
             ProgressStyle::with_template(
-                "{prefix:.bold} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} {msg}"
+                "{prefix:.bold} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} {msg}",
             )
             .unwrap()
             .progress_chars("=>-"),
@@ -300,7 +312,12 @@ mod tests {
         });
         trainer.train(&tiny_corpus()).unwrap();
         for s in &trainer.history {
-            assert!(s.avg_loss.is_finite(), "epoch {} loss={}", s.epoch, s.avg_loss);
+            assert!(
+                s.avg_loss.is_finite(),
+                "epoch {} loss={}",
+                s.epoch,
+                s.avg_loss
+            );
         }
     }
 

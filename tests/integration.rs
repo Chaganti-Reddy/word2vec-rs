@@ -58,8 +58,10 @@ fn loss_decreases_over_epochs() {
     trainer.train(&corpus).unwrap();
 
     let losses: Vec<f64> = trainer.history.iter().map(|s| s.avg_loss).collect();
-    let first_half: f64 = losses[..losses.len() / 2].iter().sum::<f64>() / (losses.len() / 2) as f64;
-    let second_half: f64 = losses[losses.len() / 2..].iter().sum::<f64>() / (losses.len() - losses.len() / 2) as f64;
+    let first_half: f64 =
+        losses[..losses.len() / 2].iter().sum::<f64>() / (losses.len() / 2) as f64;
+    let second_half: f64 =
+        losses[losses.len() / 2..].iter().sum::<f64>() / (losses.len() - losses.len() / 2) as f64;
     assert!(
         second_half < first_half,
         "Loss should decrease: first_half={first_half:.4}, second_half={second_half:.4}"
@@ -80,7 +82,7 @@ fn similar_words_are_contextually_close() {
 
     let paris_berlin = emb.similarity("paris", "berlin").unwrap();
     let paris_tokyo = emb.similarity("paris", "tokyo").unwrap();
-    let paris_dog   = emb.similarity("paris", "dog").unwrap();
+    let paris_dog = emb.similarity("paris", "dog").unwrap();
 
     assert!(
         paris_berlin > paris_dog || paris_tokyo > paris_dog,
@@ -91,16 +93,27 @@ fn similar_words_are_contextually_close() {
 #[test]
 fn most_similar_excludes_query_word() {
     let corpus = make_corpus(40);
-    let mut trainer = Trainer::new(Config { epochs: 3, embedding_dim: 20, ..Config::default() });
+    let mut trainer = Trainer::new(Config {
+        epochs: 3,
+        embedding_dim: 20,
+        ..Config::default()
+    });
     let emb = trainer.train(&corpus).unwrap();
     let results = emb.most_similar("king", 10);
-    assert!(!results.iter().any(|(w, _)| w == "king"), "query word should not appear in results");
+    assert!(
+        !results.iter().any(|(w, _)| w == "king"),
+        "query word should not appear in results"
+    );
 }
 
 #[test]
 fn most_similar_returns_at_most_k_results() {
     let corpus = make_corpus(20);
-    let mut trainer = Trainer::new(Config { epochs: 2, embedding_dim: 10, ..Config::default() });
+    let mut trainer = Trainer::new(Config {
+        epochs: 2,
+        embedding_dim: 10,
+        ..Config::default()
+    });
     let emb = trainer.train(&corpus).unwrap();
     let results = emb.most_similar("the", 3);
     assert!(results.len() <= 3);
@@ -109,7 +122,11 @@ fn most_similar_returns_at_most_k_results() {
 #[test]
 fn similarity_is_symmetric() {
     let corpus = make_corpus(30);
-    let mut trainer = Trainer::new(Config { epochs: 2, embedding_dim: 10, ..Config::default() });
+    let mut trainer = Trainer::new(Config {
+        epochs: 2,
+        embedding_dim: 10,
+        ..Config::default()
+    });
     let emb = trainer.train(&corpus).unwrap();
     let ab = emb.similarity("king", "queen").unwrap();
     let ba = emb.similarity("queen", "king").unwrap();
@@ -119,7 +136,11 @@ fn similarity_is_symmetric() {
 #[test]
 fn save_and_load_preserves_similarity() {
     let corpus = make_corpus(30);
-    let mut trainer = Trainer::new(Config { epochs: 2, embedding_dim: 10, ..Config::default() });
+    let mut trainer = Trainer::new(Config {
+        epochs: 2,
+        embedding_dim: 10,
+        ..Config::default()
+    });
     let emb = trainer.train(&corpus).unwrap();
     let original_sim = emb.similarity("king", "queen").unwrap();
 
@@ -130,14 +151,20 @@ fn save_and_load_preserves_similarity() {
     let loaded = word2vec::Embeddings::load(&path).unwrap();
     let loaded_sim = loaded.similarity("king", "queen").unwrap();
 
-    assert!((original_sim - loaded_sim).abs() < 1e-5,
-        "similarity changed after save/load: {original_sim} vs {loaded_sim}");
+    assert!(
+        (original_sim - loaded_sim).abs() < 1e-5,
+        "similarity changed after save/load: {original_sim} vs {loaded_sim}"
+    );
 }
 
 #[test]
 fn unknown_word_returns_error() {
     let corpus = make_corpus(10);
-    let mut trainer = Trainer::new(Config { epochs: 1, embedding_dim: 8, ..Config::default() });
+    let mut trainer = Trainer::new(Config {
+        epochs: 1,
+        embedding_dim: 8,
+        ..Config::default()
+    });
     let emb = trainer.train(&corpus).unwrap();
     assert!(emb.similarity("zzz_notaword", "king").is_err());
 }
@@ -145,7 +172,11 @@ fn unknown_word_returns_error() {
 #[test]
 fn text_format_export_creates_valid_file() {
     let corpus = make_corpus(20);
-    let mut trainer = Trainer::new(Config { epochs: 1, embedding_dim: 8, ..Config::default() });
+    let mut trainer = Trainer::new(Config {
+        epochs: 1,
+        embedding_dim: 8,
+        ..Config::default()
+    });
     let emb = trainer.train(&corpus).unwrap();
 
     let dir = tempfile::tempdir().unwrap();

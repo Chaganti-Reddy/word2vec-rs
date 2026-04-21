@@ -99,19 +99,28 @@ impl Config {
     /// ```
     pub fn validate(&self) -> Result<(), String> {
         if self.embedding_dim == 0 {
-            return Err(format!("embedding_dim must be > 0, got {}", self.embedding_dim));
+            return Err(format!(
+                "embedding_dim must be > 0, got {}",
+                self.embedding_dim
+            ));
         }
         if self.window_size == 0 {
             return Err(format!("window_size must be > 0, got {}", self.window_size));
         }
         if self.negative_samples == 0 {
-            return Err(format!("negative_samples must be > 0, got {}", self.negative_samples));
+            return Err(format!(
+                "negative_samples must be > 0, got {}",
+                self.negative_samples
+            ));
         }
         if self.epochs == 0 {
             return Err("epochs must be > 0".to_string());
         }
         if self.learning_rate <= 0.0 {
-            return Err(format!("learning_rate must be > 0, got {}", self.learning_rate));
+            return Err(format!(
+                "learning_rate must be > 0, got {}",
+                self.learning_rate
+            ));
         }
         Ok(())
     }
@@ -128,13 +137,19 @@ mod tests {
 
     #[test]
     fn zero_dim_is_invalid() {
-        let cfg = Config { embedding_dim: 0, ..Config::default() };
+        let cfg = Config {
+            embedding_dim: 0,
+            ..Config::default()
+        };
         assert!(cfg.validate().is_err());
     }
 
     #[test]
     fn zero_window_is_invalid() {
-        let cfg = Config { window_size: 0, ..Config::default() };
+        let cfg = Config {
+            window_size: 0,
+            ..Config::default()
+        };
         assert!(cfg.validate().is_err());
     }
 
